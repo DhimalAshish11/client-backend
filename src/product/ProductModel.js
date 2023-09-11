@@ -10,4 +10,11 @@ export const getProductById = (_id) => {
   return product.findById(_id);
 };
 
-export default { getProduct, getProductById };
+export const getProductByCategory = (filter) => {
+  const _id = new mongoose.Types.ObjectId(filter);
+  return product.find({ parentCat: _id });
+};
+
+export const getSingleProduct = (filter) => {
+  return product.findOne(filter);
+};
