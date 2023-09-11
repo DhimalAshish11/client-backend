@@ -6,7 +6,6 @@ const router = express.Router();
 
 router.get("/:_id?", async (req, res, next) => {
   try {
-    console.log("inside router");
     const { _id } = req.params;
 
     const result = _id ? await getCategoryById(_id) : await getCategories();
