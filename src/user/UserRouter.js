@@ -1,5 +1,9 @@
 import express from "express";
-
+import { hassPassword } from "../helper/bcrypt.js";
+import { v4 as uuidv4 } from "uuid";
+import { insertUser } from "./UserModel.js";
+import { accountVerificationEmail } from "../helper/nodemailer.js";
+import { auth } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 router.get("/", auth, (req, res, next) => {
@@ -14,7 +18,7 @@ router.get("/", auth, (req, res, next) => {
   }
 });
 
-router.post("/", auth, newAdminValidation, async (req, res, next) => {
+router.post("/", auth, async (req, res, next) => {
   try {
     //encrypt password
 
@@ -24,7 +28,7 @@ router.post("/", auth, newAdminValidation, async (req, res, next) => {
 
     req.body.verificationCode = uuidv4(); // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
 
-    const result = await insertAdmin(req.body);
+    const result = await insertUser(req.body);
 
     if (result?._id) {
       res.json({
@@ -59,3 +63,5 @@ router.post("/", auth, newAdminValidation, async (req, res, next) => {
     next(error);
   }
 });
+
+export default router;
