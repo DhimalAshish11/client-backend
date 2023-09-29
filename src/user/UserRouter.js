@@ -3,7 +3,7 @@ import { hassPassword } from "../helper/bcrypt.js";
 import { v4 as uuidv4 } from "uuid";
 import { insertUser } from "./UserModel.js";
 import { accountVerificationEmail } from "../helper/nodemailer.js";
-import { auth } from "../middleware/authMiddleware.js";
+import { auth, refreshAuth } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 router.get("/", auth, (req, res, next) => {
@@ -63,5 +63,7 @@ router.post("/", auth, async (req, res, next) => {
     next(error);
   }
 });
+
+router.get("/get-accessjwt", refreshAuth);
 
 export default router;

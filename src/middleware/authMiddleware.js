@@ -6,6 +6,8 @@ export const auth = async (req, res, next) => {
     // 1.get the accessJWT
     const { authorization } = req.headers;
 
+    console.log(authorization);
+
     //2. decode the jwt
 
     const decoded = verifyAccessJWT(authorization);
