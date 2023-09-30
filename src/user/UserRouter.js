@@ -1,8 +1,11 @@
 import express from "express";
 import { hassPassword } from "../helper/bcrypt.js";
 import { v4 as uuidv4 } from "uuid";
-import { insertUser } from "./UserModel.js";
-import { accountVerificationEmail } from "../helper/nodemailer.js";
+import { insertUser, updateUser } from "./UserModel.js";
+import {
+  accountVerificationEmail,
+  accountVerifiedNotification,
+} from "../helper/nodemailer.js";
 import { auth, refreshAuth } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
@@ -18,7 +21,7 @@ router.get("/", auth, (req, res, next) => {
   }
 });
 
-router.post("/", auth, async (req, res, next) => {
+router.post("/", async (req, res, next) => {
   try {
     //encrypt password
 
@@ -37,7 +40,7 @@ router.post("/", auth, async (req, res, next) => {
           "Please check your email and follow the instruction to activate your acount",
       });
 
-      const link = ` ${process.env.WEB_DOMAIN}/admin-verification?c=${result.verificationCode}&e=${result.email}`;
+      const link = ` ${process.env.WEB_DOMAIN}/user-verification?c=${result.verificationCode}&e=${result.email}`;
 
       await accountVerificationEmail({
         fName: result.fName,
@@ -65,5 +68,37 @@ router.post("/", auth, async (req, res, next) => {
 });
 
 router.get("/get-accessjwt", refreshAuth);
+
+router.post("/user-verification", async (req, res, next) => {
+  try {
+    const { c, e } = req.body;
+    console.log(req.body);
+    const filter = {
+      email: e,
+      verificationCode: c,
+    };
+    const updateObj = {
+      isVerified: true,
+      verificationCode: "",
+    };
+    const result = await updateUser(filter, updateObj);
+
+    if (result?._id) {
+      await accountVerifiedNotification(result);
+      res.json({
+        status: "success",
+        message: "Your account has been verified, you may login now!",
+      });
+
+      return;
+    }
+    res.json({
+      status: "error",
+      message: "Link is expired or invalid!",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default router;
