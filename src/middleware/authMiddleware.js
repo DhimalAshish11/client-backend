@@ -18,8 +18,8 @@ export const auth = async (req, res, next) => {
     if (decoded?.email) {
       //4. check if user is active
       const user = await getUserByEmail(decoded.email);
-
-      if (user?._id && user?.status === "active") {
+      console.log(user);
+      if (user?._id) {
         user.refreshJWT = undefined;
 
         req.userInfo = user;

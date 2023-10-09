@@ -1,12 +1,19 @@
 import express from "express";
-import { hassPassword } from "../helper/bcrypt.js";
+import { comparePassword, hassPassword } from "../helper/bcrypt.js";
 import { v4 as uuidv4 } from "uuid";
-import { insertUser, updateUser } from "./UserModel.js";
+import {
+  getUserByEmail,
+  insertUser,
+  updateUser,
+  updateUserById,
+} from "./UserModel.js";
 import {
   accountVerificationEmail,
   accountVerifiedNotification,
 } from "../helper/nodemailer.js";
 import { auth, refreshAuth } from "../middleware/authMiddleware.js";
+import { createAccessJWT, createRefreshJWT } from "../helper/jwt.js";
+import { deleteSession } from "../session/SessionModel.js";
 const router = express.Router();
 
 router.get("/", auth, (req, res, next) => {
@@ -95,6 +102,62 @@ router.post("/user-verification", async (req, res, next) => {
     res.json({
       status: "error",
       message: "Link is expired or invalid!",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/sign-in", async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    ///find user by email
+
+    const user = await getUserByEmail(email);
+
+    if (user?._id) {
+      ///check the password
+      const isMatched = comparePassword(password, user.password);
+
+      if (isMatched) {
+        ///create 2 jwts
+
+        const accessJWT = await createAccessJWT(email);
+        const refreshJWT = await createRefreshJWT(email);
+
+        ///create accessJWT and store in session table: short live 15 min
+        ///create refeshJWT and store with the user data in user data in user table:long live
+
+        return res.json({
+          status: "success",
+          message: "Logged in Successfully",
+          token: { accessJWT, refreshJWT },
+        });
+      }
+    }
+
+    res.json({
+      status: "error",
+      message: "Invalid log in",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/logout", async (req, res, next) => {
+  try {
+    const { accessJWT, refreshJWT, _id } = req.body;
+
+    accessJWT && deleteSession(accessJWT);
+
+    if (refreshJWT && _id) {
+      const dt = await updateUserById({ _id, refreshJWT: "" });
+    }
+
+    res.json({
+      status: "success",
     });
   } catch (error) {
     next(error);

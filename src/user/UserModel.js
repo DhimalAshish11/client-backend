@@ -8,6 +8,10 @@ export const getUserByEmail = (email) => {
   return UserSchema.findOne({ email });
 };
 
+export const updateUserById = (_id, rest) => {
+  return UserSchema.findByIdAndUpdate(_id, rest);
+};
+
 export const getUserById = (_id) => {
   return UserSchema.findOne({ _id });
 };
