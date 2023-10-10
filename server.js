@@ -9,6 +9,7 @@ import CategoryRouter from "./src/category/CategoryRouter.js";
 import ProductRouter from "./src/product/ProductRouter.js";
 import PaymentRouter from "./src/payment/PaymentRouter.js";
 import UserRouter from "./src/user/UserRouter.js";
+import StripeRouter from "./src/stripe/StripeRouter.js";
 
 import cors from "cors";
 app.use(cors());
@@ -18,6 +19,7 @@ app.use("/api/v1/category", CategoryRouter);
 app.use("/api/v1/product", ProductRouter);
 app.use("/api/v1/payment", PaymentRouter);
 app.use("/api/v1/user", UserRouter);
+app.use("/api/v1/create-payment-intent", StripeRouter);
 import morgan from "morgan";
 app.use(morgan("dev"));
 import mongoConnect from "./src/config/mongoConfig.js";
