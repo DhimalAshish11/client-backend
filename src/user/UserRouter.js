@@ -10,10 +10,17 @@ import {
 import {
   accountVerificationEmail,
   accountVerifiedNotification,
+  passwordChangedNotification,
+  sendOTPNotification,
 } from "../helper/nodemailer.js";
 import { auth, refreshAuth } from "../middleware/authMiddleware.js";
 import { createAccessJWT, createRefreshJWT } from "../helper/jwt.js";
-import { deleteSession } from "../session/SessionModel.js";
+import {
+  deleteSession,
+  deleteSessionByFilter,
+  insertNewSession,
+} from "../session/SessionModel.js";
+import { otpGenerator } from "../helper/RequestOTP.js";
 const router = express.Router();
 
 router.get("/", auth, (req, res, next) => {
@@ -158,6 +165,87 @@ router.post("/logout", async (req, res, next) => {
 
     res.json({
       status: "success",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/request-otp", async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (email) {
+      const user = await getUserByEmail(email);
+      if (user?._id) {
+        const otp = otpGenerator();
+        const obj = {
+          token: otp,
+          associate: email,
+        };
+        const result = await insertNewSession(obj);
+        if (result?._id) {
+          await sendOTPNotification({
+            otp,
+            email,
+            fName: user.fName,
+          });
+        }
+      }
+    }
+    res.json({
+      status: "success",
+      message:
+        "If your email exit you will receive email into your mailbox,please check your email for the instruction and otp",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/reset-password", async (req, res, next) => {
+  try {
+    const { email, password, otp } = req.body;
+
+    if (email && password) {
+      // check if the token is valid
+
+      const result = await deleteSessionByFilter({
+        token: otp,
+        associate: email,
+      });
+
+      if (result?._id) {
+        //check user exist
+
+        const user = await getUserByEmail(email);
+        if (user?._id) {
+          // encrypt the password
+
+          const hashPass = hassPassword(password);
+
+          const updatedUser = await updateUser(
+            { email },
+            { password: hashPass }
+          );
+          if (updatedUser?._id) {
+            // send email notification
+
+            await passwordChangedNotification({
+              email,
+              fName: updatedUser.fName,
+            });
+
+            return res.json({
+              status: "success",
+              message: "Your password has been updated, you may login now.",
+            });
+          }
+        }
+      }
+    }
+    res.json({
+      status: "error",
+      message: "Invalid request or token",
     });
   } catch (error) {
     next(error);
